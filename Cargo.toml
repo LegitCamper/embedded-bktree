@@ -1,0 +1,13 @@
+[package]
+name = "embedded-bktree"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["read"]
+read = []
+write = ["std", "levenshtein"]
+std = []
+
+[dependencies]
+levenshtein = { version = "1.0.5", optional = true }
