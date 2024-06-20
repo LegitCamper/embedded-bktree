@@ -46,10 +46,12 @@ pub mod write {
         }
         fn add(&mut self, word: &'a str) {
             let diff = levenshtein(self.word, word);
-            if let Some(node) = self.children[diff].as_mut() {
-                node.add(word);
-            } else {
-                self.children[diff] = Some(Box::new(Node::new(word)));
+            if diff < CHILDREN_LENGTH {
+                if let Some(node) = self.children[diff].as_mut() {
+                    node.add(word);
+                } else {
+                    self.children[diff] = Some(Box::new(Node::new(word)));
+                }
             }
         }
         pub fn as_string(&self) -> String {
