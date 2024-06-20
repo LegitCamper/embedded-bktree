@@ -37,14 +37,14 @@ pub mod write {
         pub children: [Option<Box<Node<'a>>>; CHILDREN_LENGTH],
     }
 
-    impl Node<'_> {
-        fn new(word: &'static str) -> Self {
+    impl<'a> Node<'a> {
+        fn new(word: &'a str) -> Self {
             Self {
                 word,
                 children: [const { None }; CHILDREN_LENGTH],
             }
         }
-        fn add(&mut self, word: &'static str) {
+        fn add(&mut self, word: &'a str) {
             let diff = levenshtein(self.word, word);
             if let Some(node) = self.children[diff].as_mut() {
                 node.add(word);
@@ -60,7 +60,7 @@ pub mod write {
         }
     }
 
-    pub fn write_bktree(file_name: &str, word_list: &mut Vec<&'static str>) {
+    pub fn write_bktree<'a>(file_name: &str, word_list: &mut Vec<&'a str>) {
         let mut tree = Node::new(ROOT_WORD); // root node
         let index = word_list
             .iter()
