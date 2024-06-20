@@ -33,8 +33,8 @@ pub mod write {
 
     #[derive(Debug, Clone)]
     pub struct Node<'a> {
-        word: &'a str,
-        children: [Option<Box<Node<'a>>>; CHILDREN_LENGTH],
+        pub word: &'a str,
+        pub children: [Option<Box<Node<'a>>>; CHILDREN_LENGTH],
     }
 
     impl Node<'_> {
@@ -54,7 +54,9 @@ pub mod write {
         }
         pub fn as_string(&self) -> String {
             assert_eq!(ROOT_WORD, self.word);
-            format!("static TREE: Node = {:?};", self)
+            let string = format!("static TREE: Node = {:?};", self);
+            // ensuring children are refs
+            string.replace("Some(", "Some(&")
         }
     }
 
@@ -91,8 +93,8 @@ pub mod read {
 
     #[derive(Debug, Clone)]
     pub struct Node {
-        word: &'static str,
-        children: [Option<&'static Node>; CHILDREN_LENGTH],
+        pub word: &'static str,
+        pub children: [Option<&'static Node>; CHILDREN_LENGTH],
     }
 
     impl Node {}
