@@ -4,7 +4,7 @@ extern crate std;
 // BK Tree for no_std enviroments using Levenshtein for the diff
 
 #[cfg(feature = "read")]
-pub use read::{Node, NodeIntoIterator};
+pub use read::Node;
 #[cfg(feature = "write")]
 pub use write::write_bktree;
 
@@ -116,18 +116,23 @@ mod read {
         pub word: &'static str,
         pub children: [Option<&'static Node>; CHILDREN_LENGTH],
     }
+    impl Node {
+        pub fn iter(&'static self) -> NodeIterator {
+            NodeIterator::new(self)
+        }
+    }
 
-    pub struct NodeIntoIterator {
+    pub struct NodeIterator {
         stack: Vec<(u8, &'static Node)>,
         first: bool,
     }
-    impl NodeIntoIterator {
-        pub fn new(node: &'static Node) -> Self {
+    impl NodeIterator {
+        fn new(node: &'static Node) -> Self {
             let stack = vec![(0, node)];
             Self { stack, first: true }
         }
     }
-    impl Iterator for NodeIntoIterator {
+    impl Iterator for NodeIterator {
         type Item = &'static Node;
 
         fn next(&mut self) -> Option<Self::Item> {
@@ -168,7 +173,7 @@ mod read {
 #[cfg(feature = "test")]
 #[cfg(test)]
 mod test {
-    use super::{write, Node, NodeIntoIterator};
+    use super::{write, Node};
     use std::{path::Path, println, vec};
 
     include!("../tree.test");
@@ -180,13 +185,9 @@ mod test {
         write::write_bktree(Some(path), word_list);
     }
 
-    fn iter_tree() -> NodeIntoIterator {
-        NodeIntoIterator::new(&TREE)
-    }
-
     #[test]
     fn print() {
-        for node in iter_tree() {
+        for node in TREE.iter() {
             println!("{}", node.word);
         }
     }
