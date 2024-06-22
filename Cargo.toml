@@ -4,9 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["read"]
-read = []
+# default = ["read", "alloc"]
+default = ["alloc", "test"]
+test = ["read", "write"]
+read = ["alloc"]
 write = ["std", "levenshtein"]
+alloc = []
 std = []
 
 [dependencies]

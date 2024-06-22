@@ -4,9 +4,9 @@ extern crate std;
 // BK Tree for no_std enviroments using Levenshtein for the diff
 
 #[cfg(feature = "read")]
-pub use read::Node;
+pub use read::{Node, NodeIntoIterator};
 #[cfg(feature = "write")]
-pub use write::{write_bktree, Node};
+pub use write::write_bktree;
 
 // this is the lenght of the children array in Node
 // corresponds to the number of top level words with a diff
@@ -23,11 +23,17 @@ const ROOT_WORD: &str = "the";
 /// to ensure lookup speeds are fast
 ///
 #[cfg(feature = "write")]
-pub mod write {
+mod write {
     use super::{CHILDREN_LENGTH, ROOT_WORD};
     use levenshtein::levenshtein;
     use std::{
-        boxed::Box, env::var, fmt, format, fs::File, io::Write, path::Path, string::String,
+        boxed::Box,
+        env::var,
+        fmt, format,
+        fs::File,
+        io::Write,
+        path::{Path, PathBuf},
+        string::String,
         vec::Vec,
     };
 
@@ -62,7 +68,15 @@ pub mod write {
         }
     }
 
-    pub fn write_bktree<'a>(file_name: &str, word_list: &mut Vec<&'a str>) {
+    /// Write word list to bk tree file
+    /// You can specify a specific path, otherwise 'OUT_DIR' is used.
+    /// the default file name is tree.rs -
+    /// #example:
+    /// ```
+    /// // build.rs file
+    /// // include!(concat!(env!("OUT_DIR"), "/tree.rs"));
+    /// ```
+    pub fn write_bktree<'a>(file_path: Option<PathBuf>, word_list: &mut Vec<&'a str>) {
         let mut tree = Node::new(ROOT_WORD); // root node
         let index = word_list
             .iter()
@@ -72,12 +86,13 @@ pub mod write {
         word_list.dedup();
         word_list.iter().for_each(|w| tree.add(w));
 
-        let mut contents = tree.as_string();
-
         // write the tree to cargo out's directory
-        let file_path = Path::new(&var("OUT_DIR").unwrap()).join(file_name);
-        let mut buffer = File::create(file_path).unwrap();
-        buffer.write_all(contents.as_bytes()).unwrap();
+        let mut buffer = File::create(match file_path {
+            Some(path) => path,
+            None => Path::new(&var("OUT_DIR").unwrap()).join("tree.rs"),
+        })
+        .unwrap();
+        buffer.write_all(tree.as_string().as_bytes()).unwrap();
     }
 }
 
@@ -88,10 +103,11 @@ pub mod write {
 /// include!(concat!(env!("OUT_DIR"), "tree.rs"));
 /// let corrections = TREE.corrections("foo");
 ///
-#[allow(unused_attributes)]
 #[cfg(feature = "read")]
-pub mod read {
+mod read {
     use super::CHILDREN_LENGTH;
+
+    use std::{vec, vec::Vec};
 
     #[derive(Debug, Clone)]
     pub struct Node {
@@ -99,5 +115,77 @@ pub mod read {
         pub children: [Option<&'static Node>; CHILDREN_LENGTH],
     }
 
-    impl Node {}
+    pub struct NodeIntoIterator {
+        stack: Vec<(u8, &'static Node)>,
+        first: bool,
+    }
+    impl NodeIntoIterator {
+        pub fn new(node: &'static Node) -> Self {
+            let stack = vec![(0, node)];
+            Self { stack, first: true }
+        }
+    }
+    impl Iterator for NodeIntoIterator {
+        type Item = &'static Node;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            if self.first {
+                self.first = false;
+                return Some(self.stack.first().unwrap().1);
+            }
+            loop {
+                for (i, node) in self
+                    .stack
+                    .last()
+                    .unwrap()
+                    .1
+                    .children
+                    .iter()
+                    .filter(|n| n.is_some())
+                    .skip(self.stack.last().unwrap().0 as usize)
+                    .enumerate()
+                {
+                    if let Some(node) = node {
+                        self.stack.push((i as u8, node));
+                        return Some(node);
+                    }
+                }
+
+                // made it through children and are back up to root
+                self.stack.pop();
+
+                match self.stack.pop() {
+                    Some(last) => self.stack.push((last.0 + 1, last.1)),
+                    None => return None,
+                }
+            }
+        }
+    }
+}
+
+#[cfg(feature = "test")]
+#[cfg(test)]
+mod test {
+    use super::{write, Node, NodeIntoIterator};
+    use std::{path::Path, println, vec};
+
+    include!("../tree.rs");
+
+    #[test]
+    fn write_bktree() {
+        let path = Path::new(".").join("tree.rs");
+        let word_list = &mut vec!["the", "them", "he", "car", "care", "card", "cake"];
+        write::write_bktree(Some(path), word_list);
+    }
+
+    fn iter_tree() -> NodeIntoIterator {
+        NodeIntoIterator::new(&TREE)
+    }
+
+    #[test]
+    fn print() {
+        for node in iter_tree() {
+            println!("{}", node.word);
+        }
+    }
 }
