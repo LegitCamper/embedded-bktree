@@ -13,6 +13,7 @@ pub use write::write_bktree;
 // equal to or lower than the root/parent node
 const CHILDREN_LENGTH: usize = 15;
 
+#[allow(unused)]
 const ROOT_WORD: &str = "the";
 
 /// write is explicitly for creating the bktree during compile time
@@ -29,7 +30,7 @@ mod write {
     use std::{
         boxed::Box,
         env::var,
-        fmt, format,
+        format,
         fs::File,
         io::Write,
         path::{Path, PathBuf},
