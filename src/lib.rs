@@ -107,7 +107,8 @@ mod write {
 mod read {
     use super::CHILDREN_LENGTH;
 
-    use std::{vec, vec::Vec};
+    extern crate alloc;
+    use alloc::{vec, vec::Vec};
 
     #[derive(Debug, Clone)]
     pub struct Node {
