@@ -1,0 +1,1 @@
+static TREE: Node = Node { word: "the", children: [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None], highest_diff: 0 };
