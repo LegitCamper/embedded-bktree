@@ -169,11 +169,11 @@ mod test {
     use super::{write, Node, NodeIntoIterator};
     use std::{path::Path, println, vec};
 
-    include!("../tree.rs");
+    include!("../tree.test");
 
     #[test]
     fn write_bktree() {
-        let path = Path::new(".").join("tree.rs");
+        let path = Path::new(".").join("tree.test");
         let word_list = &mut vec!["the", "them", "he", "car", "care", "card", "cake"];
         write::write_bktree(Some(path), word_list);
     }
