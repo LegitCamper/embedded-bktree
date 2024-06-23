@@ -104,9 +104,10 @@ mod write {
 /// include!(concat!(env!("OUT_DIR"), "tree.rs"));
 /// let corrections = TREE.corrections("foo");
 ///
-#[cfg(feature = "read")]
+// #[cfg(feature = "read")]
 mod read {
     use super::CHILDREN_LENGTH;
+    use levenshtein::levenshtein;
 
     extern crate alloc;
     use alloc::{vec, vec::Vec};
@@ -119,6 +120,24 @@ mod read {
     impl Node {
         pub fn iter(&'static self) -> NodeIterator {
             NodeIterator::new(self)
+        }
+
+        pub fn canidates<'a>(&'static self, word: &'a str, tolerance: u8) -> Vec<&'a str> {
+            let mut canidates = Vec::new();
+            let distance = levenshtein(self.word, word) as u8;
+            let (min, max) = (distance - tolerance, distance + tolerance);
+            for (_, node) in self
+                .children
+                .iter()
+                .enumerate()
+                .filter(|(i, _n)| *i as u8 >= min && *i as u8 <= max)
+            {
+                if let Some(node) = node {
+                    canidates.push(node.word);
+                    canidates.append(&mut node.canidates(word, tolerance));
+                }
+            }
+            canidates
         }
     }
 
@@ -148,6 +167,7 @@ mod read {
                     .1
                     .children
                     .iter()
+                    .rev()
                     .filter(|n| n.is_some())
                     .skip(self.stack.last().unwrap().0 as usize)
                     .enumerate()
@@ -181,14 +201,13 @@ mod test {
     #[test]
     fn write_bktree() {
         let path = Path::new(".").join("tree.test");
-        let word_list = &mut vec!["the", "them", "he", "car", "care", "card", "cake"];
+        let word_list = &mut vec!["the", "them", "she", "he", "car", "care", "card", "cake"];
         write::write_bktree(Some(path), word_list);
     }
 
     #[test]
-    fn print() {
-        for node in TREE.iter() {
-            println!("{}", node.word);
-        }
+    fn canidates() {
+        assert!(TREE.canidates("shes", 1).contains(&"she"));
+        assert!(TREE.canidates("cars", 1).contains(&"car"));
     }
 }
